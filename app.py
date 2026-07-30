@@ -5,7 +5,7 @@ import pandas as pd
 from PIL import Image
 
 # =====================================================================
-# PREMIUM PAGE CONFIGURATION & CUSTOM STYLING
+# PREMIUM PAGE CONFIGURATION & CUSTOM STYLING (FIXED WITH STREAMLIT MARKDOWN)
 # =====================================================================
 st.set_page_config(
     page_title="AgroPulse AI | Precision Farming Dashboard",
@@ -14,32 +14,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for modern premium cards, sleek fonts, and clean container layouts
-st.markdown("""
-    <style>
-        /* Main structural containers */
-        .main-title { font-size: 38px !important; font-weight: 800 !important; color: #1E3A8A; margin-bottom: 5px; text-align: center; }
-        .sub-title { font-size: 16px !important; color: #6B7280; text-align: center; margin-bottom: 30px; }
-        .section-header { font-size: 22px !important; font-weight: 700 !important; color: #1F2937; border-left: 5px solid #3B82F6; padding-left: 12px; margin-top: 35px; margin-bottom: 15px; }
-        
-        /* Modern Telemetry Metric Cards */
-        .metric-card-container { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 20px; }
-        .metric-card { flex: 1; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px; padding: 18px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .metric-label { font-size: 12px; font-weight: 600; color: #4B5563; text-transform: uppercase; letter-spacing: 0.5px; }
-        .metric-value { font-size: 24px; font-weight: 700; color: #111827; margin-top: 5px; }
-        
-        /* High-End Risk Indicator Panel */
-        .risk-panel { background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); border: 1px solid #FCA5A5; border-radius: 16px; padding: 25px; text-align: center; margin-top: 15px; margin-bottom: 30px; box-shadow: 0 10px 15px -3px rgba(239,68,68,0.1); }
-        .risk-label { font-size: 14px; font-weight: 700; color: #991B1B; text-transform: uppercase; letter-spacing: 1px; }
-        .risk-value { font-size: 42px; font-weight: 900; color: #DC2626; margin: 8px 0; }
-        .risk-subtext { font-size: 13px; color: #7F1D1D; opacity: 0.8; }
-        
-        /* Premium Execution / Prescription Box */
-        .prescription-box-0 { background: #FEF2F2; border-left: 6px solid #EF4444; padding: 20px; border-radius: 8px; color: #991B1B; }
-        .prescription-box-1 { background: #FFFBEB; border-left: 6px solid #F59E0B; padding: 20px; border-radius: 8px; color: #92400E; }
-        .prescription-box-2 { background: #ECFDF5; border-left: 6px solid #10B981; padding: 20px; border-radius: 8px; color: #065F46; }
-    </style>
-""", unsafe_with_html=True)
+# Custom Styling inject karne ka safe tareeqa bina Python crash kiye
+st.markdown("<style> .main-title { font-size: 38px !important; font-weight: 800 !important; color: #1E3A8A; margin-bottom: 5px; text-align: center; } .sub-title { font-size: 16px !important; color: #6B7280; text-align: center; margin-bottom: 30px; } .section-header { font-size: 22px !important; font-weight: 700 !important; color: #1F2937; border-left: 5px solid #3B82F6; padding-left: 12px; margin-top: 35px; margin-bottom: 15px; } .metric-card-container { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 20px; } .metric-card { flex: 1; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px; padding: 18px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); } .metric-label { font-size: 12px; font-weight: 600; color: #4B5563; text-transform: uppercase; letter-spacing: 0.5px; } .metric-value { font-size: 24px; font-weight: 700; color: #111827; margin-top: 5px; } .risk-panel { background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); border: 1px solid #FCA5A5; border-radius: 16px; padding: 25px; text-align: center; margin-top: 15px; margin-bottom: 30px; box-shadow: 0 10px 15px -3px rgba(239,68,68,0.1); } .risk-label { font-size: 14px; font-weight: 700; color: #991B1B; text-transform: uppercase; letter-spacing: 1px; } .risk-value { font-size: 42px; font-weight: 900; color: #DC2626; margin: 8px 0; } .risk-subtext { font-size: 13px; color: #7F1D1D; opacity: 0.8; } .prescription-box-0 { background: #FEF2F2; border-left: 6px solid #EF4444; padding: 20px; border-radius: 8px; color: #991B1B; } .prescription-box-1 { background: #FFFBEB; border-left: 6px solid #F59E0B; padding: 20px; border-radius: 8px; color: #92400E; } .prescription-box-2 { background: #ECFDF5; border-left: 6px solid #10B981; padding: 20px; border-radius: 8px; color: #065F46; } </style>", unsafe_with_html=True)
 
 # App branding top headers
 st.markdown('<div class="main-title">🥔 AgroPulse AI™ Dashboard</div>', unsafe_with_html=True)
@@ -86,27 +62,15 @@ except:
 if hasattr(raw_prediction, "item"):
     severity_score = float(raw_prediction.item())
 elif hasattr(raw_prediction, "__len__") and len(raw_prediction) > 0:
-    severity_score = float(raw_prediction[0])
+    severity_score = float(raw_prediction)
 else:
     severity_score = float(raw_prediction)
 
 # Premium Interactive Metric Visual Cards Display
-st.markdown(f"""
-    <div class="metric-card-container">
-        <div class="metric-card"><div class="metric-label">Atmosphere</div><div class="metric-value">{temp:.1f}°C</div></div>
-        <div class="metric-card"><div class="metric-label">Humidity</div><div class="metric-value">{humidity:.1f}%</div></div>
-        <div class="metric-card"><div class="metric-label">Soil State</div><div class="metric-value">{moisture:.1f}</div></div>
-    </div>
-""", unsafe_with_html=True)
+st.markdown(f'<div class="metric-card-container"><div class="metric-card"><div class="metric-label">Atmosphere</div><div class="metric-value">{temp:.1f}°C</div></div><div class="metric-card"><div class="metric-label">Humidity</div><div class="metric-value">{humidity:.1f}%</div></div><div class="metric-card"><div class="metric-label">Soil State</div><div class="metric-value">{moisture:.1f}</div></div></div>', unsafe_with_html=True)
 
 # Premium Linear Regression Risk Output Box
-st.markdown(f"""
-    <div class="risk-panel">
-        <div class="risk-label">⚠️ Calculated Yield Destruction Risk</div>
-        <div class="risk-value">{severity_score:.2f}%</div>
-        <div class="risk-subtext">Continuous real-time continuous loss function update mapped from active telemetry weights.</div>
-    </div>
-""", unsafe_with_html=True)
+st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated Yield Destruction Risk</div><div class="risk-value">{severity_score:.2f}%</div><div class="risk-subtext">Continuous real-time continuous loss function update mapped from active telemetry weights.</div></div>', unsafe_with_html=True)
 
 # =====================================================================
 # SECTION 2: BIOMETRIC CROP DIAGNOSTIC STATE (Model 1 Matrix Mapping)
@@ -173,7 +137,7 @@ except:
 if hasattr(predicted_action_code, "item"):
     final_action_idx = int(predicted_action_code.item())
 elif hasattr(predicted_action_code, "__len__") and len(predicted_action_code) > 0:
-    final_action_idx = int(predicted_action_code[0])
+    final_action_idx = int(predicted_action_code)
 else:
     final_action_idx = int(predicted_action_code)
 
@@ -182,6 +146,7 @@ actions_dictionary = {
     1: "⚠️ MITIGATION REQUIRED (CODE 1): Initiate targeted local Organic Neem Spray distribution protocols and step down micro-irrigation flow parameters.",
     2: "✅ ECOSYSTEM STATUS OPTIMAL (CODE 2): Crop vegetative index verified clean. Normal operational bounds maintained. Continuous AI telemetry active."
 }
+
 # Render final professional prescription block based on predicted node code
 st.markdown("<br>", unsafe_with_html=True)
 if final_action_idx == 0:
