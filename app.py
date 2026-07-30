@@ -33,7 +33,9 @@ live_prediction = severity_model.predict(input_data)
 
 # 5. Display Dynamic Results Metrics Grid
 st.markdown("---")
-st.metric(label="Calculated Yield Destruction Risk Score", value=f"{live_prediction:.2f}%")
+final_numeric_score = live_prediction.item()
+st.metric(label="Calculated Yield Destruction Risk Score", value=f"{final_numeric_score:.2f}%")
+
 
 if live_prediction > 50.0:
     st.error("⚠️ CRITICAL ALERT: Environmental parameters indicate severe disease propagation risks. High crop loss expected.")
