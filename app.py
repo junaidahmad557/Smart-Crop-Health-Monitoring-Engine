@@ -15,7 +15,9 @@ st.write("Complete 3-Model AI Production Pipeline Dashboard")
 # =====================================================================
 @st.cache_resource
 def load_pipeline_models():
+    # Model 2: Severity Regression Model
     regression = joblib.load("crop_severity_regression_model (1).pkl") 
+    # Model 3: Action Decision Tree Model
     decision_tree = joblib.load("crop_automation_tree_model.pkl")
     return regression, decision_tree
 
@@ -39,17 +41,15 @@ with col3:
     moisture = st.number_input("Soil Moisture Level", min_value=10.0, max_value=60.0, value=24.92)
 
 # --- [MODEL 2 EXECUTION - FIXED WITH EXACT FEATURE NAMES] ---
-# Hum unhi exact column names ka dataframe bana rahe hain jo model training me use huay thay
 telemetry_data = pd.DataFrame([[temp, humidity, moisture]], columns=['Temperature', 'Humidity', 'Moisture'])
 
 try:
     raw_prediction = reg_model.predict(telemetry_data)
-    severity_score = float(raw_prediction[0]) if hasattr(raw_prediction, "__len__") else float(raw_prediction)
+    severity_score = float(raw_prediction) if hasattr(raw_prediction, "__len__") else float(raw_prediction)
 except:
-    # Safe fallback agar column names ka koi aur masla ho
     telemetry_inputs = np.array([[temp, humidity, moisture]])
     raw_prediction = reg_model.predict(telemetry_inputs)
-    severity_score = float(raw_prediction[0]) if hasattr(raw_prediction, "__len__") else float(raw_prediction)
+    severity_score = float(raw_prediction) if hasattr(raw_prediction, "__len__") else float(raw_prediction)
 
 st.markdown("### Calculated Yield Destruction Risk Score")
 st.error(f"⚠️ **{severity_score:.2f}%**")
@@ -110,14 +110,13 @@ st.subheader("🤖 Automated Production Pipeline Prescription")
 st.write("Combining Disease ID and Telemetry Severity Score via Decision Tree Engine...")
 
 # --- [MODEL 3 EXECUTION - FIXED] ---
-# Decision tree ko unhi custom feature names ka structure dena ha jo training me tha
 tree_data = pd.DataFrame([[disease_idx, severity_score]], columns=['Detected_Disease_ID', 'Severity_Loss_Percent'])
 
 try:
-    predicted_action_code = tree_model.predict(tree_data)[0]
+    predicted_action_code = tree_model.predict(tree_data)
 except:
     pipeline_vector = np.array([[disease_idx, severity_score]])
-    predicted_action_code = tree_model.predict(pipeline_vector)[0]
+    predicted_action_code = tree_model.predict(pipeline_vector)
 
 actions_dictionary = {
     0: "🔴 CRITICAL ALERT (CODE 0): Apply Industrial Copper Fungicide within 24 hours.",
@@ -125,10 +124,15 @@ actions_dictionary = {
     2: "🟢 SYSTEM NORMAL (CODE 2): Crop matrix is verified healthy. Continuous automated monitoring active."
 }
 
+# --- [FINAL DISPATCH LAYOUT - FIXED] ---
 st.markdown("#### Execution Decision:")
-if int(predicted_action_code) == 0:
+
+# Array se index integer value nikalna takay dictionary mapping sahi ho sake
+final_action_idx = int(predicted_action_code) if hasattr(predicted_action_code, "__len__") else int(predicted_action_code)
+
+if final_action_idx == 0:
     st.error(actions_dictionary[0])
-elif int(predicted_action_code) == 1:
+elif final_action_idx == 1:
     st.warning(actions_dictionary[1])
 else:
     st.success(actions_dictionary[2])
