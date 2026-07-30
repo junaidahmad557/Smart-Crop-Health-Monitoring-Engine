@@ -182,9 +182,11 @@ actions_dictionary = {
     1: "⚠️ MITIGATION REQUIRED (CODE 1): Initiate targeted local Organic Neem Spray distribution protocols and step down micro-irrigation flow parameters.",
     2: "✅ ECOSYSTEM STATUS OPTIMAL (CODE 2): Crop vegetative index verified clean. Normal operational bounds maintained. Continuous AI telemetry active."
 }
-
 # Render final professional prescription block based on predicted node code
 st.markdown("<br>", unsafe_with_html=True)
 if final_action_idx == 0:
     st.markdown(f'<div class="prescription-box-0"><b>{actions_dictionary[0]}</b></div>', unsafe_with_html=True)
 elif final_action_idx == 1:
+    st.markdown(f'<div class="prescription-box-1"><b>{actions_dictionary[1]}</b></div>', unsafe_with_html=True)
+else:
+    st.markdown(f'<div class="prescription-box-2"><b>{actions_dictionary[2]}</b></div>', unsafe_with_html=True)
