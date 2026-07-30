@@ -40,16 +40,22 @@ with col2:
 with col3:
     moisture = st.number_input("Soil Moisture Level", min_value=10.0, max_value=60.0, value=24.92)
 
-# --- [MODEL 2 EXECUTION - FIXED WITH EXACT FEATURE NAMES] ---
+# --- [MODEL 2 EXECUTION - FIXED WITH ROBUST VALUE EXTRACTION] ---
 telemetry_data = pd.DataFrame([[temp, humidity, moisture]], columns=['Temperature', 'Humidity', 'Moisture'])
 
 try:
     raw_prediction = reg_model.predict(telemetry_data)
-    severity_score = float(raw_prediction) if hasattr(raw_prediction, "__len__") else float(raw_prediction)
 except:
     telemetry_inputs = np.array([[temp, humidity, moisture]])
     raw_prediction = reg_model.predict(telemetry_inputs)
-    severity_score = float(raw_prediction) if hasattr(raw_prediction, "__len__") else float(raw_prediction)
+
+# 🛠️ FIXED: Extracting single value safely to avoid TypeError
+if hasattr(raw_prediction, "item"):
+    severity_score = float(raw_prediction.item())
+elif hasattr(raw_prediction, "__len__") and len(raw_prediction) > 0:
+    severity_score = float(raw_prediction[0])
+else:
+    severity_score = float(raw_prediction)
 
 st.markdown("### Calculated Yield Destruction Risk Score")
 st.error(f"⚠️ **{severity_score:.2f}%**")
@@ -127,8 +133,13 @@ actions_dictionary = {
 # --- [FINAL DISPATCH LAYOUT - FIXED] ---
 st.markdown("#### Execution Decision:")
 
-# Array se index integer value nikalna takay dictionary mapping sahi ho sake
-final_action_idx = int(predicted_action_code) if hasattr(predicted_action_code, "__len__") else int(predicted_action_code)
+# 🛠️ FIXED: Extracting index safely for dictionary mapping
+if hasattr(predicted_action_code, "item"):
+    final_action_idx = int(predicted_action_code.item())
+elif hasattr(predicted_action_code, "__len__") and len(predicted_action_code) > 0:
+    final_action_idx = int(predicted_action_code[0])
+else:
+    final_action_idx = int(predicted_action_code)
 
 if final_action_idx == 0:
     st.error(actions_dictionary[0])
