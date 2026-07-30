@@ -38,20 +38,27 @@ with col2:
 with col3:
     moisture = st.number_input("Soil Moisture Level", min_value=10.0, max_value=60.0, value=24.92)
 
-# --- [MODEL 2 EXECUTION] ---
+# --- [MODEL 2 EXECUTION - FIXED WITH EXACT FEATURE NAMES] ---
+# Hum unhi exact column names ka dataframe bana rahe hain jo model training me use huay thay
 telemetry_data = pd.DataFrame([[temp, humidity, moisture]], columns=['Temperature', 'Humidity', 'Moisture'])
-raw_prediction = reg_model.predict(telemetry_data)
-severity_score = float(raw_prediction) if hasattr(raw_prediction, "__len__") else float(raw_prediction)
+
+try:
+    raw_prediction = reg_model.predict(telemetry_data)
+    severity_score = float(raw_prediction[0]) if hasattr(raw_prediction, "__len__") else float(raw_prediction)
+except:
+    # Safe fallback agar column names ka koi aur masla ho
+    telemetry_inputs = np.array([[temp, humidity, moisture]])
+    raw_prediction = reg_model.predict(telemetry_inputs)
+    severity_score = float(raw_prediction[0]) if hasattr(raw_prediction, "__len__") else float(raw_prediction)
 
 st.markdown("### Calculated Yield Destruction Risk Score")
 st.error(f"⚠️ **{severity_score:.2f}%**")
 
 # =====================================================================
-# SECTION 2: DISEASE SELECTION / IMAGE DIAGNOSIS (With Sample Photos)
+# SECTION 2: DISEASE SELECTION / IMAGE DIAGNOSIS (Model 1 Simulation)
 # =====================================================================
 st.subheader("📸 Crop Disease Diagnostic Input")
 
-# Teeno options de diye hain testing kay liye
 mode = st.radio("Choose Input Mode:", [
     "Manual Selection (Fast Testing)", 
     "Use a Sample Test Photo (Pre-loaded)",
@@ -59,7 +66,6 @@ mode = st.radio("Choose Input Mode:", [
 ])
 
 disease_idx = 2 # Default: Healthy
-image_to_show = None
 
 if mode == "Manual Selection (Fast Testing)":
     disease_choice = st.selectbox(
@@ -74,7 +80,6 @@ if mode == "Manual Selection (Fast Testing)":
         disease_idx = 2
 
 elif mode == "Use a Sample Test Photo (Pre-loaded)":
-    # User sample select karay ga aur back-end par automatic uski Disease_ID lock ho jaye gi
     sample_choice = st.selectbox(
         "Choose a Sample Potato Leaf to Test:",
         ["Sample 1: Sick Leaf (Late Blight Case)", "Sample 2: Infected Leaf (Early Blight Case)", "Sample 3: Clean Leaf (Healthy Case)"]
@@ -104,9 +109,15 @@ else:
 st.subheader("🤖 Automated Production Pipeline Prescription")
 st.write("Combining Disease ID and Telemetry Severity Score via Decision Tree Engine...")
 
-# --- [MODEL 3 EXECUTION] ---
-pipeline_vector = np.array([[disease_idx, severity_score]])
-predicted_action_code = tree_model.predict(pipeline_vector)
+# --- [MODEL 3 EXECUTION - FIXED] ---
+# Decision tree ko unhi custom feature names ka structure dena ha jo training me tha
+tree_data = pd.DataFrame([[disease_idx, severity_score]], columns=['Detected_Disease_ID', 'Severity_Loss_Percent'])
+
+try:
+    predicted_action_code = tree_model.predict(tree_data)[0]
+except:
+    pipeline_vector = np.array([[disease_idx, severity_score]])
+    predicted_action_code = tree_model.predict(pipeline_vector)[0]
 
 actions_dictionary = {
     0: "🔴 CRITICAL ALERT (CODE 0): Apply Industrial Copper Fungicide within 24 hours.",
@@ -115,9 +126,9 @@ actions_dictionary = {
 }
 
 st.markdown("#### Execution Decision:")
-if predicted_action_code == 0:
-    st.error(actions_dictionary[predicted_action_code])
-elif predicted_action_code == 1:
-    st.warning(actions_dictionary[predicted_action_code])
+if int(predicted_action_code) == 0:
+    st.error(actions_dictionary[0])
+elif int(predicted_action_code) == 1:
+    st.warning(actions_dictionary[1])
 else:
-    st.success(actions_dictionary[predicted_action_code])
+    st.success(actions_dictionary[2])
