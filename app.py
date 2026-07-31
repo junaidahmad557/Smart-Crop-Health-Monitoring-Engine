@@ -42,11 +42,14 @@ with col2:
 with col3:
     moisture = st.number_input("Soil Moisture Level", min_value=10.0, max_value=60.0, value=24.92, step=0.1)
 
+# Resolves: ValueError Tensor conversion requested dtype string
 telemetry_data = pd.DataFrame([[temp, humidity, moisture]], columns=['Temperature', 'Humidity', 'Moisture'])
+telemetry_data = telemetry_data.astype(str) 
+
 try:
     raw_prediction = reg_model.predict(telemetry_data)
-except:
-    telemetry_inputs = np.array([[temp, humidity, moisture]])
+except Exception as e:
+    telemetry_inputs = np.array([[temp, humidity, moisture]]).astype(str)
     raw_prediction = reg_model.predict(telemetry_inputs)
 
 try:
@@ -56,12 +59,13 @@ except:
 
 st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated Yield Destruction Risk</div><div class="risk-value">{severity_score:.2f}%</div><div class="risk-subtext">Continuous real-time loss function update mapped from active telemetry weights.</div></div>', unsafe_allow_html=True)
 
+
 # =====================================================================
 # SECTION 2: DEEP LEARNING IMAGE DIAGNOSTICS (Model 1: CNN Powered)
 # =====================================================================
 @st.cache_resource
 def download_and_load_cnn():
-    # File ka naam badal kar 'potato_final_network.h5' rakhlein taake ziddi cache bypass ho jaye
+    # Modified filename bypasses corrupt historical cloud caches
     model_path = 'potato_final_network.h5'
     
     if os.path.exists(model_path):
@@ -70,7 +74,6 @@ def download_and_load_cnn():
             
     if not os.path.exists(model_path):
         with st.spinner("Downloading trained CNN model layers via secure link... Please wait."):
-            # 100% Correct and direct layout link parameters:
             file_id = '1kuB-PC2qg742LTTvdPmArZJ-HZgFQKm3'
             url = f'https://google.com{file_id}' 
             gdown.download(url, model_path, quiet=False)
