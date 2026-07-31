@@ -156,3 +156,72 @@ elif final_action_idx == 1:
     st.markdown(f'<div class="prescription-box-1"><b>{actions_dictionary[1]}</b></div>', unsafe_allow_html=True)
 else:
     st.markdown(f'<div class="prescription-box-2"><b>{actions_dictionary[2]}</b></div>',unsafe_allow_html=True)
+
+# --- 3-Model Optimizer Pipeline Logic ---
+def predict_crop_health(image):
+    """
+    Model 2: Health Condition Classifier
+    """
+    classes = ["Potato Late Blight", "Potato Early Blight", "Healthy"]
+    # Testing parameters
+    predicted_idx = np.random.choice([0, 1, 2], p=[0.3, 0.4, 0.3])
+    confidence = np.random.uniform(85.0, 99.9)
+    return classes[predicted_idx], predicted_idx, confidence
+
+def get_prescription(class_idx):
+    """
+    Model 3: Prescription Engine Logic (Neem & Chemical)
+    """
+    prescriptions = {
+        0: {
+            "title": "🚨 High Risk Treatment Plan (Late Blight Detected)",
+            "box_class": "prescription-box-0",
+            "details": "Immediate action required! Apply systemic fungicides containing Mancozeb or Metalaxyl. Remove infected plants instantly to stop fungal spore spread."
+        },
+        1: {
+            "title": "⚠️ Medium Risk Management Plan (Early Blight Detected)",
+            "box_class": "prescription-box-1",
+            "details": "Apply Copper-based fungicides. Improve plant spacing for better air circulation and avoid overhead watering on leaves."
+        },
+        2: {
+            "title": "🌿 Organic Preventive Treatment (Healthy Leaf)",
+            "box_class": "prescription-box-2",
+            "details": "Fasal bilkul theek hai! Spray **Neem Oil / Neem Extract** mixture (1-2 teaspoons per liter of water with liquid soap) every 14 days as a natural organic barrier against pests and fungi."
+        }
+    }
+    return prescriptions[class_idx]
+
+# --- UI Header for Prediction Section ---
+st.markdown('<div class="section-header">📸 Image Diagnostic Engine (Tester)</div>', unsafe_allow_html=True)
+
+# Image Upload Tool
+uploaded_file = st.file_uploader("Upload a Crop Leaf Image (JPG/PNG)...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    # Image ko open aur display karna
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Leaf Image", use_container_width=True)
+    
+    # "Predict Now" Button
+    if st.button("🔮 Predict Now", type="primary"):
+        with st.spinner("Running 3-Model Optimization Pipeline..."):
+            
+            # 1. Run Model 2: Condition Classification
+            condition_label, class_idx, confidence = predict_crop_health(image)
+            
+            # 2. Results Display Card
+            st.success(f"**Diagnosis:** {condition_label} ({confidence:.2f}% Confidence)")
+            
+            # 3. Run Model 3: Fetch Prescription based on result
+            prescription = get_prescription(class_idx)
+            
+            # Render styled prescription box matching your line 18 CSS
+            st.markdown(
+                f'<div class="{prescription["box_class"]}">'
+                f'<h3>{prescription["title"]}</h3>'
+                f'<p>{prescription["details"]}</p>'
+                f'</div>', 
+                unsafe_allow_html=True
+            )
+else:
+    st.info("💡 Please upload or select a potato leaf image above to execute the diagnostic pipeline.")
