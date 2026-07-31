@@ -76,7 +76,7 @@ st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated 
 # =====================================================================
 # SECTION 2: BIOMETRIC CROP DIAGNOSTIC STATE (Model 1 Matrix Mapping)
 # =====================================================================
-st.markdown('<div class="section-header">📸 Computer Vision Diagnostic Stream</div>', unsafe_with_html=True)
+st.markdown('<div class="section-header">📸 Computer Vision Diagnostic Stream</div>', unsafe_allow_html=True)
 
 mode = st.radio("Select Diagnostic Input Mechanism:", [
     "⚡ Manual Vector Override (Recommended for Quick Testing)", 
@@ -86,7 +86,7 @@ mode = st.radio("Select Diagnostic Input Mechanism:", [
 
 disease_idx = 2 # Default fallback state
 
-st.markdown("<br>", unsafe_with_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
 
 if "Manual Vector" in mode:
     disease_choice = st.selectbox(
@@ -123,7 +123,7 @@ else:
 # =====================================================================
 # SECTION 3: AUTOMATED CONTROL PRESCRIPTION (Model 3: Decision Tree)
 # =====================================================================
-st.markdown('<div class="section-header">🤖 Automated Production Control Pipeline Dispatch</div>', unsafe_with_html=True)
+st.markdown('<div class="section-header">🤖 Automated Production Control Pipeline Dispatch</div>', unsafe_allow_html=True)
 st.write("Resolving combined mathematical features via Deep Decision Tree Node Architecture...")
 
 tree_data = pd.DataFrame([[disease_idx, severity_score]], columns=['Detected_Disease_ID', 'Severity_Loss_Percent'])
@@ -149,10 +149,10 @@ actions_dictionary = {
 }
 
 # Render final professional prescription block based on predicted node code
-st.markdown("<br>", unsafe_with_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
 if final_action_idx == 0:
-    st.markdown(f'<div class="prescription-box-0"><b>{actions_dictionary[0]}</b></div>', unsafe_with_html=True)
+    st.markdown(f'<div class="prescription-box-0"><b>{actions_dictionary[0]}</b></div>', unsafe_allow_html=True)
 elif final_action_idx == 1:
-    st.markdown(f'<div class="prescription-box-1"><b>{actions_dictionary[1]}</b></div>', unsafe_with_html=True)
+    st.markdown(f'<div class="prescription-box-1"><b>{actions_dictionary[1]}</b></div>', unsafe_allow_html=True)
 else:
-    st.markdown(f'<div class="prescription-box-2"><b>{actions_dictionary[2]}</b></div>', unsafe_with_html=True)
+    st.markdown(f'<div class="prescription-box-2"><b>{actions_dictionary[2]}</b></div>',unsafe_allow_html=True)
