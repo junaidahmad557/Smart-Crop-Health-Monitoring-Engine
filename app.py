@@ -159,39 +159,108 @@ elif final_action_idx == 1:
 else:
     st.markdown(f'<div class="prescription-box-2"><b>{actions_dictionary[2]}</b></div>',unsafe_allow_html=True)
 
-# --- Google Drive Cloud CNN Loader (Updated with Auto-Cleanup) ---
+# --- Google Drive Cloud CNN Loader (Fixed URL Version) ---
 import numpy as np
 import os
 import gdown
 import tensorflow as tf
 from PIL import Image
+import streamlit as st
 
 @st.cache_resource
 def download_and_load_model():
     model_path = 'potato_model.h5'
     
-    # 1. PURANI/CORRUPT FILE DELETE KAREIN
+    # 1. Purani ya corrupt file ko saaf karna
     if os.path.exists(model_path):
-        # Agar file < 10MB hai (corrupt), to delete karein
         if os.path.getsize(model_path) < 10 * 1024 * 1024: 
             os.remove(model_path)
     
-    # 2. NAYE SIRE SE RE-DOWNLOAD KAREIN
+    # 2. Sahi URL format ke sath re-download trigger karna
     if not os.path.exists(model_path):
-        with st.spinner("Downloading trained model..."):
+        with st.spinner("Downloading trained CNN model layers via secure link... Please wait."):
+            # Sahi link format: ://google.com
             file_id = '1kuB-PC2qg742LTTvdPmArZJ-HZgFQKm3'
             url = f'https://google.com{file_id}'
             gdown.download(url, model_path, quiet=False)
                 
     return tf.keras.models.load_model(model_path)
 
-# Safe loading
+# Safe binary verification check
 try:
     cnn_model = download_and_load_model()
     model_loaded = True
 except Exception as e:
     model_loaded = False
-    st.error(f"⚠️ Model load failed: {e}")
+    st.error(f"⚠️ CNN Model load nahi ho saka. Error detail: {e}")
 
-# (Rest of the application code remains same, make sure to add necessary imports)
-# ...
+def predict_crop_health(image):
+    """
+    Model 2: Real CNN Classifier Engine
+    """
+    classes = ["Potato Late Blight", "Potato Early Blight", "Healthy"]
+    
+    # Image Dimensions Adjustments
+    img = image.resize((224, 224)) 
+    img_array = tf.keras.preprocessing.image.img_to_array(img)
+    img_array = tf.expand_dims(img_array, 0)
+    img_array = img_array / 255.0
+    
+    # Output Inference
+    predictions = cnn_model.predict(img_array)
+    predicted_idx = np.argmax(predictions)
+    confidence = np.max(predictions) * 100
+    
+    return classes[predicted_idx], predicted_idx, confidence
+
+def get_prescription(class_idx):
+    """
+    Model 3: Prescription Engine Logic (Neem & Chemical)
+    """
+    prescriptions = {
+        0: {
+            "title": "🚨 High Risk Treatment Plan (Late Blight Detected)",
+            "box_class": "prescription-box-0",
+            "details": "Immediate action required! Apply systemic fungicides containing Mancozeb or Metalaxyl. Remove infected plants instantly to stop fungal spore spread."
+        },
+        1: {
+            "title": "⚠️ Medium Risk Management Plan (Early Blight Detected)",
+            "box_class": "prescription-box-1",
+            "details": "Apply Copper-based fungicides. Improve plant spacing for better air circulation and avoid overhead watering on leaves."
+        },
+        2: {
+            "title": "🌿 Organic Preventive Treatment (Healthy Leaf)",
+            "box_class": "prescription-box-2",
+            "details": "Fasal bilkul theek hai! Spray **Neem Oil / Neem Extract** mixture (1-2 teaspoons per liter of water with liquid soap) every 14 days as a natural organic barrier against pests and fungi."
+        }
+    }
+    return prescriptions[class_idx]
+
+# --- UI Layout Rendering ---
+st.markdown('<div class="section-header">📸 Image Diagnostic Engine (CNN Powered)</div>', unsafe_allow_html=True)
+
+uploaded_file = st.file_uploader("Upload a Potato Leaf Image (JPG/PNG)...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Leaf Profile", use_container_width=True)
+    
+    if st.button("🔮 Predict Now", type="primary"):
+        if model_loaded:
+            with st.spinner("Processing deep layers through CNN Pipeline..."):
+                condition_label, class_idx, confidence = predict_crop_health(image)
+                
+                st.success(f"**Diagnosis:** {condition_label} ({confidence:.2f}% Confidence)")
+                
+                prescription = get_prescription(class_idx)
+                st.markdown(
+                    f'<div class="{prescription["box_class"]}">'
+                    f'<h3>{prescription["title"]}</h3>'
+                    f'<p>{prescription["details"]}</p>'
+                    f'</div>', 
+                    unsafe_allow_html=True
+                )
+        else:
+            st.warning("Prediction activation locked due to server model offline parameters.")
+else:
+    st.info("💡 Please upload a potato leaf image above to execute the CNN diagnostic pipeline.")
