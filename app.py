@@ -50,7 +50,11 @@ except:
     raw_prediction = reg_model.predict(telemetry_inputs)
 
 # Model 2 ki raw value se yield risk matrix display karna
-severity_score = float(raw_prediction)
+try:
+    severity_score = float(raw_prediction.item())
+except:
+    severity_score = float(raw_prediction[0])
+
 st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated Yield Destruction Risk</div><div class="risk-value">{severity_score:.2f}%</div><div class="risk-subtext">Continuous real-time loss function update mapped from active telemetry weights.</div></div>', unsafe_allow_html=True)
 
 
