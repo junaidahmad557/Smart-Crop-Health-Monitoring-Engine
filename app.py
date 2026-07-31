@@ -146,3 +146,41 @@ if uploaded_file is not None:
             st.warning("Prediction activation locked due to server model offline parameters.")
 else:
     st.info("💡 Please upload a potato leaf image above to execute the CNN diagnostic pipeline.")
+
+# --- Google Drive Cloud CNN Loader (Updated with Auto-Cleanup) ---
+import numpy as np
+import os
+import gdown
+import tensorflow as tf
+from PIL import Image
+
+@st.cache_resource
+def download_and_load_model():
+    model_path = 'potato_model.h5'
+    
+    # 1. PURANI/CORRUPT FILE DELETE KAREIN
+    if os.path.exists(model_path):
+        # Agar file < 10MB hai (corrupt), to delete karein
+        if os.path.getsize(model_path) < 10 * 1024 * 1024: 
+            os.remove(model_path)
+    
+    # 2. NAYE SIRE SE RE-DOWNLOAD KAREIN
+    if not os.path.exists(model_path):
+        with st.spinner("Downloading trained model..."):
+            file_id = '1kuB-PC2qg742LTTvdPmArZJ-HZgFQKm3'
+            url = f'https://google.com{file_id}'
+            gdown.download(url, model_path, quiet=False)
+                
+    return tf.keras.models.load_model(model_path)
+
+# Safe loading
+try:
+    cnn_model = download_and_load_model()
+    model_loaded = True
+except Exception as e:
+    model_loaded = False
+    st.error(f"⚠️ Model load failed: {e}")
+
+# (Rest of the application code remains same, make sure to add necessary imports)
+# ...
+
