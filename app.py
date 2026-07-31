@@ -61,7 +61,8 @@ st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated 
 # =====================================================================
 @st.cache_resource
 def download_and_load_cnn():
-    model_path = 'potato_model.h5'
+    # File ka naam badal kar 'potato_final_network.h5' rakhlein taake ziddi cache bypass ho jaye
+    model_path = 'potato_final_network.h5'
     
     if os.path.exists(model_path):
         if os.path.getsize(model_path) < 10 * 1024 * 1024: 
@@ -69,8 +70,9 @@ def download_and_load_cnn():
             
     if not os.path.exists(model_path):
         with st.spinner("Downloading trained CNN model layers via secure link... Please wait."):
+            # 100% Correct and direct layout link parameters:
             file_id = '1kuB-PC2qg742LTTvdPmArZJ-HZgFQKm3'
-            url = f'https://google.com{file_id}'  # <-- Yahan link bilkul sahi set hai!
+            url = f'https://google.com{file_id}' 
             gdown.download(url, model_path, quiet=False)
                 
     return tf.keras.models.load_model(model_path)
