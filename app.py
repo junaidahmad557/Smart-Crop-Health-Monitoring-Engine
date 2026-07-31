@@ -40,7 +40,7 @@ except Exception as e:
 # =====================================================================
 # SECTION 1: LIVE FARM TELEMETRY METRICS (Model 2: Regression)
 # =====================================================================
-st.markdown('<div class="section-header">📊 Real-Time Environmental Telemetry</div>', unsafe_with_html=True)
+st.html('<div class="section-header">📊 Real-Time Environmental Telemetry</div>')
 
 # Sleek input fields grouped tightly together
 col1, col2, col3 = st.columns(3)
