@@ -311,6 +311,17 @@ with st.sidebar.expander("Model loading details", expanded=False):
         st.success("CNN model loaded.")
 
 
+# Results must survive Streamlit reruns while the user completes all three
+# stages of the pipeline.
+st.session_state.setdefault("severity_score", None)
+st.session_state.setdefault("detected_disease_id", None)
+st.session_state.setdefault("detected_condition", None)
+st.session_state.setdefault("cnn_confidence", None)
+st.session_state.setdefault("cnn_file_signature", None)
+st.session_state.setdefault("automation_result", None)
+st.session_state.setdefault("automation_confidence", None)
+
+
 # -----------------------------------------------------------------------------
 # TABULAR-MODEL PREDICTION HELPERS
 # -----------------------------------------------------------------------------
@@ -319,13 +330,13 @@ def normalize_feature_name(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", str(name).lower())
 
 
-def create_tabular_input(
+def create_regression_input(
     model: Any,
     temperature: float,
     humidity: float,
     moisture: float,
 ) -> Any:
-    """Build input that respects scikit-learn feature names when available."""
+    """Build the telemetry input expected by the regression model."""
     values_by_alias: Dict[str, float] = {
         "temperature": float(temperature),
         "temp": float(temperature),
@@ -378,7 +389,7 @@ def predict_regression(
     humidity: float,
     moisture: float,
 ) -> float:
-    model_input = create_tabular_input(model, temperature, humidity, moisture)
+    model_input = create_regression_input(model, temperature, humidity, moisture)
     prediction = np.asarray(model.predict(model_input)).reshape(-1)
 
     if prediction.size == 0:
@@ -401,13 +412,77 @@ def format_decision_label(value: Any) -> str:
     return label.title() if label else "Unknown Decision"
 
 
+def create_tree_input(
+    model: Any,
+    detected_disease_id: int,
+    severity: float,
+    loss_percent: float,
+) -> Any:
+    """Build the exact feature set expected by the automation tree.
+
+    The saved tree reports these inputs through feature_names_in_:
+    Detected Disease ID, Severity, and Loss Percent. The aliases below also
+    support common underscore/capitalization variations of those names.
+    """
+    values_by_alias: Dict[str, float] = {
+        "detecteddiseaseid": float(detected_disease_id),
+        "diseaseid": float(detected_disease_id),
+        "detectedid": float(detected_disease_id),
+        "severity": float(severity),
+        "severityscore": float(severity),
+        "losspercent": float(loss_percent),
+        "losspercentage": float(loss_percent),
+        "croplosspercent": float(loss_percent),
+        "yieldlosspercent": float(loss_percent),
+    }
+
+    feature_names = getattr(model, "feature_names_in_", None)
+    if feature_names is not None:
+        row: Dict[str, float] = {}
+        unsupported_features = []
+
+        for feature_name in feature_names:
+            feature_text = str(feature_name)
+            normalized_name = normalize_feature_name(feature_text)
+
+            if normalized_name not in values_by_alias:
+                unsupported_features.append(feature_text)
+            else:
+                row[feature_text] = values_by_alias[normalized_name]
+
+        if unsupported_features:
+            raise ValueError(
+                "The decision tree expects unknown features: "
+                + ", ".join(unsupported_features)
+            )
+
+        return pd.DataFrame([row], columns=[str(item) for item in feature_names])
+
+    expected_count = getattr(model, "n_features_in_", 3)
+    if int(expected_count) != 3:
+        raise ValueError(
+            f"The decision tree expects {expected_count} features, but this "
+            "pipeline provides Detected Disease ID, Severity, and Loss Percent."
+        )
+
+    return np.array(
+        [[float(detected_disease_id), float(severity), float(loss_percent)]],
+        dtype=np.float64,
+    )
+
+
 def predict_tree_decision(
     model: Any,
-    temperature: float,
-    humidity: float,
-    moisture: float,
+    detected_disease_id: int,
+    severity: float,
+    loss_percent: float,
 ) -> Tuple[str, Optional[float]]:
-    model_input = create_tabular_input(model, temperature, humidity, moisture)
+    model_input = create_tree_input(
+        model,
+        detected_disease_id,
+        severity,
+        loss_percent,
+    )
     prediction = np.asarray(model.predict(model_input)).reshape(-1)
 
     if prediction.size == 0:
@@ -466,6 +541,8 @@ with st.form("telemetry_form"):
 
 if analyze_telemetry:
     if reg_model is None:
+        st.session_state.severity_score = None
+        st.session_state.automation_result = None
         st.error(
             "Severity prediction is unavailable because the regression model "
             "did not load. Open 'Model loading details' in the sidebar."
@@ -475,49 +552,34 @@ if analyze_telemetry:
             severity_score = predict_regression(
                 reg_model, temp, humidity, moisture
             )
-            st.markdown(
-                f"""
-                <div class="risk-panel">
-                    <div class="risk-label">⚠️ Calculated Yield Destruction Risk</div>
-                    <div class="risk-value">{severity_score:.2f}%</div>
-                    <div class="risk-subtext">
-                        Prediction produced from the current environmental telemetry.
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
+            st.session_state.severity_score = severity_score
+            st.session_state.loss_percent_input = float(
+                np.clip(severity_score, 0.0, 100.0)
             )
+            st.session_state.automation_result = None
+            st.session_state.automation_confidence = None
         except Exception as exc:
+            st.session_state.severity_score = None
+            st.session_state.automation_result = None
             st.error(f"Regression prediction failed: {exc}")
 
-    if tree_model is None:
-        st.warning(
-            "Automation decision is unavailable because the decision-tree "
-            "model did not load."
-        )
-    else:
-        try:
-            decision_label, decision_confidence = predict_tree_decision(
-                tree_model, temp, humidity, moisture
-            )
-            confidence_text = (
-                f" ({decision_confidence:.2f}% confidence)"
-                if decision_confidence is not None
-                else ""
-            )
-            st.markdown(
-                f"""
-                <div class="automation-panel">
-                    <div class="automation-label">🌱 Decision-Tree Automation Output</div>
-                    <div class="automation-value">
-                        {decision_label}{confidence_text}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        except Exception as exc:
-            st.error(f"Decision-tree prediction failed: {exc}")
+if st.session_state.severity_score is not None:
+    st.markdown(
+        f"""
+        <div class="risk-panel">
+            <div class="risk-label">⚠️ Predicted Crop Severity</div>
+            <div class="risk-value">{st.session_state.severity_score:.2f}</div>
+            <div class="risk-subtext">
+                Regression output produced from the current environmental telemetry.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.caption(
+        "Stage 1 complete: this severity value will be passed to the "
+        "decision-tree automation model."
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -655,8 +717,22 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is None:
+    st.session_state.detected_disease_id = None
+    st.session_state.detected_condition = None
+    st.session_state.cnn_confidence = None
+    st.session_state.cnn_file_signature = None
+    st.session_state.automation_result = None
+    st.session_state.automation_confidence = None
     st.info("💡 Upload a potato leaf image to run the CNN diagnostic pipeline.")
 else:
+    file_signature = f"{uploaded_file.name}:{uploaded_file.size}"
+    if st.session_state.cnn_file_signature != file_signature:
+        st.session_state.detected_disease_id = None
+        st.session_state.detected_condition = None
+        st.session_state.cnn_confidence = None
+        st.session_state.automation_result = None
+        st.session_state.automation_confidence = None
+
     try:
         uploaded_image = Image.open(uploaded_file)
         uploaded_image.load()
@@ -682,25 +758,135 @@ else:
                             cnn_model, uploaded_image
                         )
 
-                    st.success(
-                        f"Diagnosis: **{condition}** "
-                        f"({confidence:.2f}% confidence)"
-                    )
-
-                    prescription = get_prescription(class_index)
-                    st.markdown(
-                        f"""
-                        <div class="{prescription['box_class']}">
-                            <h3>{prescription['title']}</h3>
-                            <p>{prescription['details']}</p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-                    st.caption(
-                        "AI predictions can be incorrect. Confirm important crop "
-                        "decisions with a qualified local agricultural specialist."
-                    )
+                    st.session_state.detected_disease_id = class_index
+                    st.session_state.detected_condition = condition
+                    st.session_state.cnn_confidence = confidence
+                    st.session_state.cnn_file_signature = file_signature
+                    st.session_state.automation_result = None
+                    st.session_state.automation_confidence = None
                 except Exception as exc:
+                    st.session_state.detected_disease_id = None
+                    st.session_state.detected_condition = None
+                    st.session_state.cnn_confidence = None
+                    st.session_state.automation_result = None
                     st.error(f"CNN prediction failed: {exc}")
+
+        if (
+            st.session_state.detected_disease_id is not None
+            and st.session_state.cnn_file_signature == file_signature
+        ):
+            st.success(
+                f"Diagnosis: **{st.session_state.detected_condition}** "
+                f"({st.session_state.cnn_confidence:.2f}% confidence)"
+            )
+
+            prescription = get_prescription(
+                int(st.session_state.detected_disease_id)
+            )
+            st.markdown(
+                f"""
+                <div class="{prescription['box_class']}">
+                    <h3>{prescription['title']}</h3>
+                    <p>{prescription['details']}</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.caption(
+                "Stage 2 complete: disease ID "
+                f"{st.session_state.detected_disease_id} will be passed to the "
+                "decision tree. AI predictions should be confirmed by a "
+                "qualified local agricultural specialist."
+            )
+
+
+# -----------------------------------------------------------------------------
+# SECTION 3: INTEGRATED DECISION-TREE AUTOMATION
+# -----------------------------------------------------------------------------
+st.markdown(
+    '<div class="section-header">🌱 Integrated Automation Decision</div>',
+    unsafe_allow_html=True,
+)
+
+if tree_model is None:
+    st.error(
+        "Decision-tree automation is unavailable because the model did not "
+        "load. Open 'Model loading details' in the sidebar."
+    )
+elif st.session_state.severity_score is None:
+    st.info(
+        "Complete Stage 1 first: enter environmental telemetry and click "
+        "'Analyze Telemetry'."
+    )
+elif st.session_state.detected_disease_id is None:
+    st.info(
+        "Complete Stage 2 first: upload a potato leaf and click "
+        "'Predict Leaf Health'."
+    )
+else:
+    severity_for_tree = float(st.session_state.severity_score)
+    detected_id_for_tree = int(st.session_state.detected_disease_id)
+
+    st.write(
+        "The decision tree will receive its required features: "
+        f"**Detected Disease ID = {detected_id_for_tree}**, "
+        f"**Severity = {severity_for_tree:.2f}**, and the loss percentage below."
+    )
+
+    if "loss_percent_input" not in st.session_state:
+        st.session_state.loss_percent_input = float(
+            np.clip(severity_for_tree, 0.0, 100.0)
+        )
+
+    with st.form("automation_form"):
+        loss_percent = st.number_input(
+            "Estimated Crop Loss (%)",
+            min_value=0.0,
+            max_value=100.0,
+            step=0.1,
+            key="loss_percent_input",
+            help=(
+                "The current project has one regression output for severity. "
+                "Confirm or edit the separate Loss Percent value required by "
+                "the saved decision-tree model."
+            ),
+        )
+        run_automation = st.form_submit_button(
+            "Run Decision-Tree Automation",
+            type="primary",
+            use_container_width=True,
+        )
+
+    if run_automation:
+        try:
+            decision_label, decision_confidence = predict_tree_decision(
+                tree_model,
+                detected_disease_id=detected_id_for_tree,
+                severity=severity_for_tree,
+                loss_percent=float(loss_percent),
+            )
+            st.session_state.automation_result = decision_label
+            st.session_state.automation_confidence = decision_confidence
+        except Exception as exc:
+            st.session_state.automation_result = None
+            st.session_state.automation_confidence = None
+            st.error(f"Decision-tree prediction failed: {exc}")
+
+    if st.session_state.automation_result is not None:
+        confidence_text = (
+            f" ({st.session_state.automation_confidence:.2f}% confidence)"
+            if st.session_state.automation_confidence is not None
+            else ""
+        )
+        st.markdown(
+            f"""
+            <div class="automation-panel">
+                <div class="automation-label">Decision-Tree Output</div>
+                <div class="automation-value">
+                    {st.session_state.automation_result}{confidence_text}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
