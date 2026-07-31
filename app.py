@@ -49,14 +49,12 @@ except:
     telemetry_inputs = np.array([[temp, humidity, moisture]])
     raw_prediction = reg_model.predict(telemetry_inputs)
 
-# Model 2 ki raw value se yield risk matrix display karna
 try:
     severity_score = float(raw_prediction.item())
 except:
-    severity_score = float(raw_prediction[0])
+    severity_score = float(raw_prediction)
 
 st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated Yield Destruction Risk</div><div class="risk-value">{severity_score:.2f}%</div><div class="risk-subtext">Continuous real-time loss function update mapped from active telemetry weights.</div></div>', unsafe_allow_html=True)
-
 
 # =====================================================================
 # SECTION 2: DEEP LEARNING IMAGE DIAGNOSTICS (Model 1: CNN Powered)
@@ -65,22 +63,18 @@ st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated 
 def download_and_load_cnn():
     model_path = 'potato_model.h5'
     
-    # 1. Agar pehle se koi corrupt khali file parhi hai to delete karein
     if os.path.exists(model_path):
         if os.path.getsize(model_path) < 10 * 1024 * 1024: 
             os.remove(model_path)
             
-    # 2. Sahi drive google link ke sath fresh download shuru karein
     if not os.path.exists(model_path):
         with st.spinner("Downloading trained CNN model layers via secure link... Please wait."):
             file_id = '1kuB-PC2qg742LTTvdPmArZJ-HZgFQKm3'
-            # Yeh bilkul durust link format hai:
-            url = f'https://google.com{file_id}'
+            url = f'https://google.com{file_id}'  # <-- Yahan link bilkul sahi set hai!
             gdown.download(url, model_path, quiet=False)
                 
     return tf.keras.models.load_model(model_path)
 
-# Safe application trigger
 try:
     cnn_model = download_and_load_cnn()
     cnn_online = True
@@ -133,7 +127,6 @@ if uploaded_file is not None:
         if cnn_online:
             with st.spinner("Processing deep layers through CNN Pipeline..."):
                 condition_label, class_idx, confidence = predict_crop_health(image)
-                
                 st.success(f"**Diagnosis:** {condition_label} ({confidence:.2f}% Confidence)")
                 
                 prescription = get_prescription(class_idx)
