@@ -158,29 +158,29 @@ elif final_action_idx == 1:
     st.markdown(f'<div class="prescription-box-1"><b>{actions_dictionary[1]}</b></div>', unsafe_allow_html=True)
 else:
     st.markdown(f'<div class="prescription-box-2"><b>{actions_dictionary[2]}</b></div>',unsafe_allow_html=True)
-# --- Google Drive Cloud CNN Loader (Lines 159+) ---
+
+# --- Google Drive Professional CNN Loader (Lines 159+) ---
 import numpy as np
-import requests
 import os
+import gdown
 import tensorflow as tf
 
 @st.cache_resource
 def download_and_load_model():
     """
-    Google Drive se 180MB model automatically fetch aur load karne ka safe tareeqa
+    gdown ke zariye Google Drive se 180MB model safely bypass download karne ka tareeqa
     """
     model_path = 'potato_model.h5'
     
-    # Agar model server par pehle se maujood nahi hai to download karein
+    # Agar model pehle se server par nahi hai to download karein
     if not os.path.exists(model_path):
-        with st.spinner("Downloading trained CNN model layers from secure cloud... Please wait."):
+        with st.spinner("Downloading trained CNN model layers via secure link... Please wait."):
+            # Aap ki asli Google Drive File ID
+            file_id = '1kuB-PC2qg742LTTvdPmArZJ-HZgFQKm3'
+            url = f'https://google.com{file_id}'
             
-            # ✅ Aap ki asli Google Drive ID yahan set kar di hai:
-            url = 'https://google.com'
-            
-            response = requests.get(url)
-            with open(model_path, 'wb') as f:
-                f.write(response.content)
+            # gdown auto-bypasses virus scan pages for large files
+            gdown.download(url, model_path, quiet=False)
                 
     return tf.keras.models.load_model(model_path)
 
