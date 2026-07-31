@@ -181,7 +181,8 @@ def download_and_load_model():
         with st.spinner("Downloading trained CNN model layers via secure link... Please wait."):
             # Sahi link format: ://google.com
             file_id = '1kuB-PC2qg742LTTvdPmArZJ-HZgFQKm3'
-            url = f'https://google.com{file_id}'
+         url = f'https://google.com{file_id}'
+
             gdown.download(url, model_path, quiet=False)
                 
     return tf.keras.models.load_model(model_path)
