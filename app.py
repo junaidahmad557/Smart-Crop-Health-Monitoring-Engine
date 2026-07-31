@@ -42,18 +42,23 @@ with col2:
 with col3:
     moisture = st.number_input("Soil Moisture Level", min_value=10.0, max_value=60.0, value=24.92, step=0.1)
 
-# Resolves: ValueError Tensor conversion requested dtype string
-telemetry_data = pd.DataFrame([[temp, humidity, moisture]], columns=['Temperature', 'Humidity', 'Moisture'])
-telemetry_data = telemetry_data.astype(str) 
-
+# Clean numeric matrix format check to solve scikit-learn validation error
 try:
+    telemetry_data = pd.DataFrame([[temp, humidity, moisture]], columns=['Temperature', 'Humidity', 'Moisture']).astype(float)
     raw_prediction = reg_model.predict(telemetry_data)
 except Exception as e:
-    telemetry_inputs = np.array([[temp, humidity, moisture]]).astype(str)
-    raw_prediction = reg_model.predict(telemetry_inputs)
+    try:
+        telemetry_inputs = np.array([[temp, humidity, moisture]], dtype=np.float32)
+        raw_prediction = reg_model.predict(telemetry_inputs)
+    except:
+        telemetry_inputs = [[float(temp), float(humidity), float(moisture)]]
+        raw_prediction = reg_model.predict(telemetry_inputs)
 
 try:
-    severity_score = float(raw_prediction.item())
+    if hasattr(raw_prediction, "item"):
+        severity_score = float(raw_prediction.item())
+    else:
+        severity_score = float(raw_prediction)
 except:
     severity_score = float(raw_prediction)
 
@@ -65,7 +70,6 @@ st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated 
 # =====================================================================
 @st.cache_resource
 def download_and_load_cnn():
-    # Modified filename bypasses corrupt historical cloud caches
     model_path = 'potato_final_network.h5'
     
     if os.path.exists(model_path):
