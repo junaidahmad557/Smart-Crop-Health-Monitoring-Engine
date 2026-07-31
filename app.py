@@ -20,7 +20,7 @@ st.html("<style> .main-title { font-size: 38px !important; font-weight: 800 !imp
 # App branding top headers
 st.html('<div class="main-title">🥔 AgroPulse AI™ Dashboard</div>')
 
-st.markdown('<div class="sub-title">Industrial Production-Grade 3-Model Optimization Pipeline</div>', unsafe_with_html=True)
+st.markdown('<div class="sub-title">Industrial Production-Grade 3-Model Optimization Pipeline</div>', unsafe_allow_html=True)
 
 # =====================================================================
 # BACKEND INITIALIZATION (MODEL LOADING)
