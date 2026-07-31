@@ -71,7 +71,7 @@ else:
 st.html(f'<div class="metric-card-container"><div class="metric-card"><div class="metric-label">Atmosphere</div><div class="metric-value">{temp:.1f}°C</div></div><div class="metric-card"><div class="metric-label">Humidity</div><div class="metric-value">{humidity:.1f}%</div></div><div class="metric-card"><div class="metric-label">Soil State</div><div class="metric-value">{moisture:.1f}</div></div></div>')
 
 # Premium Linear Regression Risk Output Box
-st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated Yield Destruction Risk</div><div class="risk-value">{severity_score:.2f}%</div><div class="risk-subtext">Continuous real-time continuous loss function update mapped from active telemetry weights.</div></div>', unsafe_with_html=True)
+st.markdown(f'<div class="risk-panel"><div class="risk-label">⚠️ Calculated Yield Destruction Risk</div><div class="risk-value">{severity_score:.2f}%</div><div class="risk-subtext">Continuous real-time continuous loss function update mapped from active telemetry weights.</div></div>', unsafe_allow_html=True)
 
 # =====================================================================
 # SECTION 2: BIOMETRIC CROP DIAGNOSTIC STATE (Model 1 Matrix Mapping)
